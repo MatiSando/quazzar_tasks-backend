@@ -1,0 +1,19 @@
+# === Laravel ===
+/vendor/
+/node_modules/
+.env
+/storage/
+/bootstrap/cache/
+/public/storage
+
+# === Logs / otros ===
+*.log
+Homestead.yaml
+npm-debug.log*
+yarn-error.log*
+
+# === IDE / Sistema ===
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
