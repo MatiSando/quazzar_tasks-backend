@@ -17,7 +17,6 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Railway usa PORT
 CMD sh -c "\
-    php artisan key:generate --force || true && \
-    php artisan optimize:clear && \
-    php artisan migrate --force || true && \
-    php -S 0.0.0.0:${PORT:-8080} -t public "
+  php artisan optimize:clear || true && \
+  php artisan config:clear || true && \
+  php -S 0.0.0.0:${PORT:-8080} -t public public/index.php"
