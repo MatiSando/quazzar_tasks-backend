@@ -54,3 +54,10 @@ Route::get('/busquedas/tareas', [TareasController::class, 'tareasLog']);
 
 // Opcional: saber si un VIN está finalizado en un área
 Route::get('/tareas/{area}/finalizado/{vin}', [TareasController::class, 'finalizadoPorVin']);
+
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/health', function () {
+    return response()->json(['ok' => true]);
+});
