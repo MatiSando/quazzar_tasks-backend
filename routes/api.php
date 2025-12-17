@@ -56,7 +56,6 @@ Route::get('/busquedas/tareas', [TareasController::class, 'tareasLog']);
 Route::get('/tareas/{area}/finalizado/{vin}', [TareasController::class, 'finalizadoPorVin']);
 
 
-use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
     return response()->json(['ok' => true]);
