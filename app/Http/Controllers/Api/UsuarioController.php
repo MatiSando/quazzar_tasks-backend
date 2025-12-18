@@ -34,42 +34,42 @@ class UsuarioController extends Controller
      *  - password: opcional; si no se envía se usa '1234'
      */
     public function store(Request $request)
-    {
-        try {
-            $data = $request->validate([
-                'full_name' => 'required|string|max:255',
-                'email'     => 'required|email|unique:usuarios,email',
-                'rol'       => ['required', Rule::in(['admin','user'])],
-                'activo'    => 'required|boolean',
-                'password'  => 'nullable|string|min:4',
-            ]);
+{
+    try {
+        $data = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email'     => 'required|email|unique:usuarios,email',
+            'rol'       => ['required', Rule::in(['admin','user'])],
+            'activo'    => 'required|boolean',
+            'password'  => 'nullable|string|min:4',
+        ]);
 
-            $plain = $data['password'] ?? '1234';
+        $plain = $data['password'] ?? '1234';
 
-            $usuario = new Usuario();
-            $usuario->full_name     = $data['full_name'];
-            $usuario->email         = strtolower($data['email']);
-            $usuario->rol           = $data['rol'];
-            $usuario->activo        = (bool)$data['activo'];
-            $usuario->password_hash = $plain;
-            $usuario->save();
+        $usuario = new Usuario();
+        $usuario->full_name     = $data['full_name'];
+        $usuario->email         = strtolower($data['email']);
+        $usuario->rol           = $data['rol'];
+        $usuario->activo        = (bool)$data['activo'];
+        $usuario->password_hash = $plain;
+        $usuario->save();
 
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Usuario creado correctamente',
-                'usuario' => $usuario,
-            ], 201);
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Usuario creado correctamente',
+            'usuario' => $usuario,
+        ], 201);
 
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Fallo creando usuario (debug)',
-                'error_class' => get_class($e),
-                'error_msg' => $e->getMessage(),
-                // ojo: temporal, luego lo quitas
-            ], 500);
-        }
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Fallo creando usuario (debug)',
+            'error_class' => get_class($e),
+            'error_msg' => $e->getMessage(),
+            // ojo: temporal, luego lo quitas
+        ], 500);
     }
+}
 
 
     /**
