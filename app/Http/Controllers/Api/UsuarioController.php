@@ -34,8 +34,8 @@ class UsuarioController extends Controller
      *  - password: opcional; si no se envía se usa '1234'
      */
     public function store(Request $request)
-{
-    try {
+    {
+        // 1) Validación de entrada
         $data = $request->validate([
             'full_name' => 'required|string|max:255',
             'email'     => 'required|email|unique:usuarios,email',
@@ -44,33 +44,25 @@ class UsuarioController extends Controller
             'password'  => 'nullable|string|min:4',
         ]);
 
+        // 2) Si no viene contraseña, forzamos '1234'
         $plain = $data['password'] ?? '1234';
 
+        // 3) Construcción del modelo (el mutator en Usuario hashea password_hash)
         $usuario = new Usuario();
         $usuario->full_name     = $data['full_name'];
-        $usuario->email         = strtolower($data['email']);
+        $usuario->email         = strtolower($data['email']); // normalizamos a minúsculas
         $usuario->rol           = $data['rol'];
         $usuario->activo        = (bool)$data['activo'];
-        $usuario->password_hash = $plain;
+        $usuario->password_hash = $plain; // <- MUTATOR en el modelo debe aplicar Hash::make
         $usuario->save();
 
+        // 4) Respuesta con el usuario creado (sin password_hash si está oculto en el modelo)
         return response()->json([
             'status'  => 'success',
             'message' => 'Usuario creado correctamente',
             'usuario' => $usuario,
         ], 201);
-
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Fallo creando usuario (debug)',
-            'error_class' => get_class($e),
-            'error_msg' => $e->getMessage(),
-            // ojo: temporal, luego lo quitas
-        ], 500);
     }
-}
-
 
     /**
      * PUT /api/usuarios/{id}
