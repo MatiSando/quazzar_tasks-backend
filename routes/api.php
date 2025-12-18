@@ -60,3 +60,12 @@ Route::get('/tareas/{area}/finalizado/{vin}', [TareasController::class, 'finaliz
 Route::get('/health', function () {
     return response()->json(['ok' => true]);
 });
+
+use App\Models\Usuario;
+
+Route::get('/debug-usuarios', function () {
+    return [
+        'count' => Usuario::count(),
+        'first' => Usuario::first(),
+    ];
+});
