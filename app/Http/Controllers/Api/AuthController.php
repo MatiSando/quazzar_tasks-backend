@@ -25,17 +25,46 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // 1) Reglas de validación básicas para el body del login
-        $request->validate([
+        // 0) Leer el payload de forma robusta (JSON / form / raw)
+        $payload = $request->json()->all();
+
+        if (empty($payload)) {
+            $payload = $request->all();
+        }
+
+        if (empty($payload)) {
+            $raw = $request->getContent();
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+
+        // 1) Validación (sobre $payload, no sobre $request)
+        $validator = \Illuminate\Support\Facades\Validator::make($payload, [
             'email'    => 'required|email',
             'password' => 'required',
         ]);
 
-        // 2) Búsqueda del usuario por email (normalizado en minúsculas)
-        //    Importante: en migraciones/seeders, almacenar emails ya en lowercase.
-        $user = Usuario::where('email', strtolower($request->email))->first();
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+                // ✅ DEBUG TEMPORAL (para cerrar el caso y luego lo quitas)
+                'debug' => [
+                    'content_type' => $request->header('Content-Type'),
+                    'accept'       => $request->header('Accept'),
+                    'raw_len'      => strlen($request->getContent()),
+                ],
+            ], 422);
+        }
 
-        // Si no existe el usuario, devolvemos 404 (no encontrado)
+        $data = $validator->validated();
+
+        // 2) Búsqueda del usuario por email (normalizado en minúsculas)
+        $user = Usuario::where('email', strtolower($data['email']))->first();
+
         if (!$user) {
             return response()->json([
                 'status'  => 'error',
@@ -44,28 +73,21 @@ class AuthController extends Controller
         }
 
         // 3) Comprobación de contraseña con soporte "legacy"
-        //    $stored: lo que hay en la BD (puede ser hash bcrypt o texto plano heredado)
-        //    $plain:  lo que llega del login
         $stored = (string) $user->password_hash;
-        $plain  = (string) $request->password;
+        $plain  = (string) $data['password'];
 
         $ok = false;
 
         if (str_starts_with($stored, '$2y$')) {
-            // Caso moderno: el hash es bcrypt => usar Hash::check
             $ok = Hash::check($plain, $stored);
         } else {
-            // Caso legado: quedó contraseña en texto plano (migraciones antiguas)
-            // Comparamos en claro y, si coincide, "actualizamos" a hash
-            // aprovechando el mutator del modelo (setPasswordHashAttribute).
             if (hash_equals($stored, $plain)) {
                 $ok = true;
-                $user->password_hash = $plain; // el mutator aplica bcrypt automáticamente
+                $user->password_hash = $plain; // mutator aplica bcrypt
                 $user->save();
             }
         }
 
-        // Si la contraseña no es correcta, devolvemos 401 (no autorizado)
         if (!$ok) {
             return response()->json([
                 'status'  => 'error',
@@ -73,7 +95,6 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // 4) Chequeo de estado activo: si está inactivo => 403 (prohibido)
         if ((int)$user->activo === 0) {
             return response()->json([
                 'status'  => 'error',
@@ -81,12 +102,9 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // 5) Emisión de token de sesión "simple" para el front
-        //    NOTA: Aquí se genera pero no se guarda en BD; el front lo pone en sessionStorage
-        //    y lo envía como Bearer con el interceptor. Si quieres revocar/expirar, persístelo.
+        // 5) Token simple (como lo tenías)
         $token = base64_encode(random_bytes(32));
 
-        // 6) Respuesta con datos públicos del usuario (no incluir hash)
         return response()->json([
             'status'  => 'success',
             'message' => 'Login correcto',
@@ -99,4 +117,5 @@ class AuthController extends Controller
             ],
         ]);
     }
+
 }
